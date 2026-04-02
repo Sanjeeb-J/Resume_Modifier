@@ -201,7 +201,10 @@ Instructions:
 3. For sections marked 'NO CHANGE', copy them exactly as-is
 4. Return a complete, polished, ATS-friendly resume
 5. Format output as clean HTML with proper headings and bullet points
-6. Maintain professional tone throughout`;
+6. Maintain professional tone throughout
+7. Keep the resume compact enough to fit on one page when reasonably possible
+8. Do not add generic opening headings like "Resume", "Curriculum Vitae", or "General Information" at the top
+9. Start directly with the candidate name and core contact information`;
 
 const stripCodeFence = (text = "") =>
   text
@@ -222,6 +225,17 @@ const buildFallbackHtml = (text) => {
       return `<section><h2>${escapeHtml(section.title)}</h2>${body}</section>`;
     })
     .join("");
+};
+
+const cleanGeneratedHtml = (html) => {
+  if (!html) return html;
+
+  return html
+    .replace(
+      /^\s*<(h1|h2|h3|p)>\s*(resume|curriculum vitae|general information)\s*<\/\1>\s*/i,
+      "",
+    )
+    .trim();
 };
 
 const sectionContentMap = (sections) =>
@@ -307,12 +321,12 @@ const makeDocxParagraphs = (blocks, docx) => {
               new TextRun({
                 text: block.text,
                 bold: true,
-                size: 34,
+                size: 30,
                 font: "Aptos Display",
                 color: "0F172A",
               }),
             ],
-            spacing: { after: 180 },
+            spacing: { after: 120 },
             heading: HeadingLevel.TITLE,
           });
         }
@@ -322,12 +336,12 @@ const makeDocxParagraphs = (blocks, docx) => {
             new TextRun({
               text: block.text.toUpperCase(),
               bold: true,
-              size: 22,
+              size: 19,
               font: "Aptos",
               color: "1D4ED8",
             }),
           ],
-          spacing: { before: 220, after: 120 },
+          spacing: { before: 140, after: 80 },
           border: {
             bottom: {
               color: "CBD5E1",
@@ -344,8 +358,8 @@ const makeDocxParagraphs = (blocks, docx) => {
           new Paragraph({
             text: item,
             bullet: { level: 0 },
-            spacing: { after: 90 },
-            indent: { left: 360, hanging: 180 },
+            spacing: { after: 60 },
+            indent: { left: 300, hanging: 140 },
             alignment: AlignmentType.LEFT,
           }),
         );
@@ -355,12 +369,12 @@ const makeDocxParagraphs = (blocks, docx) => {
         children: [
           new TextRun({
             text: block.text,
-            size: 21,
+            size: 19,
             font: "Aptos",
             color: "334155",
           }),
         ],
-        spacing: { after: 110 },
+        spacing: { after: 75 },
         alignment: AlignmentType.LEFT,
       });
     })
@@ -541,7 +555,11 @@ function App() {
     try {
       const resultHtml = await callGemini();
       setGeneratedHtml(
-        resultHtml.startsWith("<") ? resultHtml : buildFallbackHtml(resultHtml),
+        cleanGeneratedHtml(
+          resultHtml.startsWith("<")
+            ? resultHtml
+            : buildFallbackHtml(resultHtml),
+        ),
       );
     } catch (generationError) {
       setError(
@@ -560,14 +578,14 @@ function App() {
     const pdf = new jsPDF("p", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 16;
+    const margin = 11;
     const usableWidth = pageWidth - margin * 2;
-    let y = 18;
+    let y = 12;
 
     const ensureSpace = (height) => {
-      if (y + height > pageHeight - 16) {
+      if (y + height > pageHeight - 11) {
         pdf.addPage();
-        y = 18;
+        y = 12;
       }
     };
 
@@ -595,25 +613,25 @@ function App() {
         if (block.level === 1 || index === 0) {
           drawTextBlock({
             text: block.text,
-            fontSize: 20,
+            fontSize: 18,
             color: [15, 23, 42],
             bold: true,
-            gapAfter: 3.5,
+            gapAfter: 2.5,
           });
           return;
         }
 
-        y += 2;
+        y += 1;
         drawTextBlock({
           text: block.text.toUpperCase(),
-          fontSize: 10.5,
+          fontSize: 9.6,
           color: [29, 78, 216],
           bold: true,
-          gapAfter: 1.8,
+          gapAfter: 1.2,
         });
         pdf.setDrawColor(203, 213, 225);
         pdf.line(margin, y - 0.4, pageWidth - margin, y - 0.4);
-        y += 2.4;
+        y += 1.5;
         return;
       }
 
@@ -621,21 +639,21 @@ function App() {
         block.items.forEach((item) => {
           drawTextBlock({
             text: `• ${item}`,
-            fontSize: 10.5,
+            fontSize: 9.5,
             color: [51, 65, 85],
-            indent: 2,
-            gapAfter: 1.5,
+            indent: 1.5,
+            gapAfter: 1,
           });
         });
-        y += 1;
+        y += 0.5;
         return;
       }
 
       drawTextBlock({
         text: block.text,
-        fontSize: 10.8,
+        fontSize: 9.7,
         color: [51, 65, 85],
-        gapAfter: 2.2,
+        gapAfter: 1.4,
       });
     });
 
@@ -651,10 +669,10 @@ function App() {
           properties: {
             page: {
               margin: {
-                top: 720,
-                right: 720,
-                bottom: 720,
-                left: 720,
+                top: 540,
+                right: 540,
+                bottom: 540,
+                left: 540,
               },
             },
           },
@@ -751,7 +769,7 @@ function App() {
             </div>
           </div>
         </section>
-        <section className="grid gap-6 xl:grid-cols-[0.88fr_1.12fr]">
+        <section className="grid gap-6 xl:grid-cols-[430px_minmax(0,1fr)]">
           <div className="space-y-6">
             <div className={cardSurface}>
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -972,7 +990,7 @@ function App() {
               <div className="resume-preview-frame mt-5 overflow-x-hidden rounded-[28px] border border-slate-200 bg-slate-100/80 p-3 dark:border-slate-800 dark:bg-slate-900/70 sm:p-5">
                 <div
                   ref={previewRef}
-                  className="resume-preview-page mx-auto w-full max-w-[850px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-8 lg:p-10"
+                  className="resume-preview-page w-full rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6 lg:p-7"
                   dangerouslySetInnerHTML={{
                     __html: generatedHtml || buildFallbackHtml(parsedText),
                   }}

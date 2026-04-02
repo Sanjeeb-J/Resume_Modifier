@@ -42,7 +42,7 @@ textarea {
 }
 
 .resume-preview-frame {
-  min-height: 460px;
+  min-height: 420px;
 }
 
 .resume-preview-page {
@@ -50,8 +50,8 @@ textarea {
 }
 
 .resume-preview-page section + section {
-  margin-top: 1.75rem;
-  padding-top: 1.3rem;
+  margin-top: 1.1rem;
+  padding-top: 0.85rem;
   border-top: 1px solid #e2e8f0;
 }
 
@@ -65,13 +65,13 @@ textarea {
 }
 
 .resume-preview-page h1 {
-  font-size: 2rem;
+  font-size: 1.7rem;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
 
 .resume-preview-page h2 {
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -85,14 +85,14 @@ textarea {
 .resume-preview-page p,
 .resume-preview-page li {
   color: #334155;
-  line-height: 1.72;
-  margin: 0 0 0.65rem;
-  font-size: 0.98rem;
+  line-height: 1.55;
+  margin: 0 0 0.35rem;
+  font-size: 0.92rem;
 }
 
 .resume-preview-page ul {
   padding-left: 1.2rem;
-  margin: 0.4rem 0 0;
+  margin: 0.15rem 0 0;
 }
 
 .resume-preview-page strong {
