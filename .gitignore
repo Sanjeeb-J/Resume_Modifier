@@ -1,0 +1,9 @@
+node_modules
+dist
+client/dist
+server/uploads
+*.log
+.env
+.env.local
+.env.*.local
+.vercel
