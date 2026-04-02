@@ -1,4 +1,4 @@
-import 'dotenv/config'
+﻿import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
@@ -8,7 +8,10 @@ import mammoth from 'mammoth'
 import WordExtractor from 'word-extractor'
 
 const app = express()
-const geminiModel = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim()
+const configuredModels = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || 'gemini-2.0-flash,gemini-2.5-flash')
+  .split(',')
+  .map((model) => model.trim())
+  .filter(Boolean)
 
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
@@ -39,8 +42,71 @@ const parseDocBuffer = async (buffer) => {
   }
 }
 
+const isQuotaError = (message = '') => {
+  const normalized = message.toLowerCase()
+  return normalized.includes('quota exceeded') || normalized.includes('rate limit') || normalized.includes('resource_exhausted')
+}
+
+const formatGeminiError = (message = '') => {
+  const normalized = message.toLowerCase()
+
+  if (normalized.includes('reported as leaked')) {
+    return 'Resume generation is unavailable because the configured Gemini API key has been revoked by Google after being reported as leaked. Create a new key in Google AI Studio, update GEMINI_API_KEY, and redeploy.'
+  }
+
+  if (isQuotaError(message)) {
+    return 'Resume generation is temporarily unavailable because the configured Gemini API key has no free-tier quota left right now. Wait a bit, switch to a billed Google AI project, or replace the server key with one that has quota.'
+  }
+
+  if (normalized.includes('api key') || normalized.includes('permission_denied')) {
+    return 'The server Gemini API key is invalid or misconfigured. Update GEMINI_API_KEY and redeploy.'
+  }
+
+  return message || 'Gemini request failed.'
+}
+
+const generateWithModel = async ({ model, apiKey, prompt }) => {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ]
+      })
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    const message = data?.error?.message || 'Gemini request failed.'
+    const error = new Error(message)
+    error.status = response.status
+    error.model = model
+    throw error
+  }
+
+  const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('')
+
+  if (!text) {
+    const error = new Error('Gemini did not return any resume content.')
+    error.status = 502
+    error.model = model
+    throw error
+  }
+
+  return { html: text, model }
+}
+
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, model: geminiModel })
+  res.json({ ok: true, models: configuredModels })
 })
 
 app.post('/api/parse-resume', upload.single('resume'), async (req, res) => {
@@ -98,42 +164,27 @@ app.post('/api/generate-resume', async (req, res) => {
     return res.status(400).json({ error: 'Missing prompt content for resume generation.' })
   }
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }]
-            }
-          ]
-        })
+  const failures = []
+
+  for (const model of configuredModels) {
+    try {
+      const result = await generateWithModel({ model, apiKey, prompt })
+      return res.json(result)
+    } catch (error) {
+      failures.push({ model, message: error.message, status: error.status || 500 })
+      console.error(`Gemini generation failed for ${model}:`, error.message)
+
+      if (!isQuotaError(error.message)) {
+        return res.status(error.status || 500).json({ error: formatGeminiError(error.message) })
       }
-    )
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      const message = data?.error?.message || 'Gemini request failed.'
-      return res.status(response.status).json({ error: message })
     }
-
-    const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('')
-
-    if (!text) {
-      return res.status(502).json({ error: 'Gemini did not return any resume content.' })
-    }
-
-    return res.json({ html: text })
-  } catch (error) {
-    console.error('Gemini generation failed:', error)
-    return res.status(500).json({ error: 'Gemini generation failed. Please try again.' })
   }
+
+  const lastFailure = failures.at(-1)
+  return res.status(lastFailure?.status || 429).json({
+    error: formatGeminiError(lastFailure?.message),
+    details: failures
+  })
 })
 
 app.use((error, _req, res, _next) => {
