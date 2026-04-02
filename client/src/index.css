@@ -19,6 +19,16 @@ body {
     radial-gradient(circle at top left, rgba(15, 23, 42, 0.08), transparent 28%),
     radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 26%),
     linear-gradient(180deg, #f8fafc 0%, #eef2f7 52%, #e2e8f0 100%);
+  color: #0f172a;
+  transition: background 220ms ease, color 220ms ease;
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.1), transparent 30%),
+    radial-gradient(circle at top right, rgba(148, 163, 184, 0.08), transparent 28%),
+    linear-gradient(180deg, #020617 0%, #0f172a 55%, #111827 100%);
+  color: #e2e8f0;
 }
 
 * {
@@ -31,49 +41,60 @@ textarea {
   font: inherit;
 }
 
-.resume-preview {
-  background:
-    linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 1)),
-    #ffffff;
+.resume-preview-frame {
+  min-height: 460px;
 }
 
-.resume-preview section + section {
+.resume-preview-page {
+  overflow-wrap: anywhere;
+}
+
+.resume-preview-page section + section {
   margin-top: 1.75rem;
-  padding-top: 1.25rem;
+  padding-top: 1.3rem;
   border-top: 1px solid #e2e8f0;
 }
 
-.resume-preview h1,
-.resume-preview h2,
-.resume-preview h3,
-.resume-preview h4 {
+.resume-preview-page h1,
+.resume-preview-page h2,
+.resume-preview-page h3,
+.resume-preview-page h4 {
   color: #0f172a;
   margin: 0 0 0.6rem;
   line-height: 1.25;
 }
 
-.resume-preview h1 {
-  font-size: 1.85rem;
+.resume-preview-page h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
-.resume-preview h2 {
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
+.resume-preview-page h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: #1d4ed8;
 }
 
-.resume-preview p,
-.resume-preview li {
+.resume-preview-page h3 {
+  font-size: 1.05rem;
+}
+
+.resume-preview-page p,
+.resume-preview-page li {
   color: #334155;
   line-height: 1.72;
   margin: 0 0 0.65rem;
+  font-size: 0.98rem;
 }
 
-.resume-preview ul {
+.resume-preview-page ul {
   padding-left: 1.2rem;
   margin: 0.4rem 0 0;
 }
 
-.resume-preview strong {
+.resume-preview-page strong {
   color: #0f172a;
 }
